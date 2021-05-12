@@ -105,6 +105,7 @@ func (p *Proxy) err(s string, err error) {
 
 func (p *Proxy) pipe(src, dst io.ReadWriter) {
 	islocal := src == p.lconn
+	addHttpRespHeader := !islocal
 
 	var dataDirection string
 	if islocal {
@@ -144,6 +145,11 @@ func (p *Proxy) pipe(src, dst io.ReadWriter) {
 		p.Log.Debug(dataDirection, n, "")
 		p.Log.Trace(byteFormat, b)
 
+		//add http headers
+		if addHttpRespHeader {
+			dst.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+		}
+
 		//write out result
 		n, err = dst.Write(b)
 		if err != nil {
@@ -155,5 +161,7 @@ func (p *Proxy) pipe(src, dst io.ReadWriter) {
 		} else {
 			p.receivedBytes += uint64(n)
 		}
+
+		addHttpRespHeader = false
 	}
 }
